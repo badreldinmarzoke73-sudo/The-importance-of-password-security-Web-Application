@@ -33,7 +33,7 @@ GMAIL_USER = "badreldinmarzoke73@gmail.com"
 GMAIL_PASS = "eoatvnlfparvgkej"
 
 # ===================== Gemini Config =====================
-GEMINI_API_KEY =  "AIzaSyDyZWzYGCAF6AUCpv23DqMKXt3k5liHlAs"
+GEMINI_API_KEY =  "your-api-key-here"
 GEMINI_MODEL   = "gemini-2.5-flash"
 
 def get_ai_model():
