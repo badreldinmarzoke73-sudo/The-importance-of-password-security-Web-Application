@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الشات بوت</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+/* ===== Sliding Sidebar ===== */
+.sidebar-toggle {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 200;
+  background: linear-gradient(135deg, #6c63ff, #00c9b1);
+  border: none;
+  border-radius: 10px 0 0 10px;
+  color: #fff;
+  width: 28px;
+  height: 64px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: width .2s;
+  writing-mode: vertical-rl;
+  letter-spacing: 2px;
+  font-family: 'Cairo', sans-serif;
+  font-size: .7rem;
+  font-weight: 700;
+}
+.sidebar-toggle:hover { width: 34px; }
+
+.chat-sidebar {
+  position: fixed;
+  top: 64px;
+  right: -300px;
+  width: 280px;
+  height: calc(100vh - 64px);
+  background: rgba(15,15,26,.97);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.1);
+  z-index: 190;
+  display: flex;
+  flex-direction: column;
+  transition: right .35s cubic-bezier(.4,0,.2,1);
+  box-shadow: -8px 0 32px rgba(0,0,0,.4);
+}
+.chat-sidebar.open { right: 0; }
+
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1rem .75rem;
+  font-size: .95rem; font-weight: 700; color: #a29dff;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.btn-new-chat {
+  background: linear-gradient(135deg,#6c63ff,#00c9b1);
+  border: none; border-radius: 8px;
+  color: #fff; font-size: 1rem;
+  width: 30px; height: 30px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .2s; font-weight: 700;
+}
+.btn-new-chat:hover { opacity: .85; }
+
+.sidebar-list {
+  flex: 1; overflow-y: auto; padding: .6rem;
+}
+.sidebar-list::-webkit-scrollbar { width: 3px; }
+.sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 99px; }
+
+.sidebar-empty {
+  text-align: center; color: rgba(255,255,255,.3);
+  font-size: .85rem; margin-top: 2rem; padding: 0 1rem;
+}
+
+.session-item {
+  padding: .7rem .85rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .2s;
+  margin-bottom: .35rem;
+  border: 1px solid transparent;
+}
+.session-item:hover  { background: rgba(255,255,255,.07); }
+.session-item.active {
+  background: rgba(108,99,255,.18);
+  border-color: rgba(108,99,255,.35);
+}
+.session-title {
+  font-size: .88rem; color: rgba(255,255,255,.9);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600;
+}
+.session-date { font-size: .75rem; color: rgba(255,255,255,.35); margin-top: .25rem; }
+
+/* Overlay when sidebar open */
+.sidebar-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 180;
+}
+.sidebar-overlay.show { display: block; }
+
+/* ===== Chat Main ===== */
+.chat-wrapper {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  height: 100vh;
+  padding-top: 64px;
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+</style>
+</head>
+<body class="chatbot-body">
+<div class="bg-shapes">
+  <div class="shape s1"></div>
+  <div class="shape s2"></div>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="nav-logo" id="navLogo">✦ المساعد الذكي</div>
+  <div class="nav-user">
+    <span class="nav-greeting" id="navGreeting">أهلاً، {{ user_name }} 👋</span>
+    <a href="/logout" class="btn-logout" id="btnLogout">خروج</a>
+  </div>
+</nav>
+
+<!-- Sidebar toggle button -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+  💬
+</button>
+
+<!-- Overlay -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Sliding Sidebar -->
+<div class="chat-sidebar" id="chatSidebar">
+  <div class="sidebar-header">
+    <span id="sidebarTitle">💬 المحادثات السابقة</span>
+    <button class="btn-new-chat" onclick="startNewChat()" id="btnNewChat" title="محادثة جديدة">＋</button>
+  </div>
+  <div class="sidebar-list" id="sessionList">
+    <p class="sidebar-empty" id="loadingText">جارٍ التحميل...</p>
+  </div>
+</div>
+
+<!-- Chat Area -->
+<div class="chat-wrapper">
+  <div class="chat-messages" id="chatMessages">
+    <div class="msg bot-msg">
+      <div class="msg-avatar">✦</div>
+      <div class="msg-bubble" id="welcomeMsg">
+        أهلاً <strong>{{ user_name }}</strong>! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟ 😊
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-area">
+    <div class="chat-input-wrap">
+      <textarea
+        id="userInput"
+        class="chat-textarea"
+        placeholder="اكتب رسالتك هنا..."
+        rows="1"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+      ></textarea>
+      <button class="btn-send" id="sendBtn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </button>
+    </div>
+    <p class="chat-hint" id="chatHint">اضغط Enter للإرسال • Shift+Enter لسطر جديد</p>
+  </div>
+</div>
+
+<script>
+let chatHistory = [];
+let sessionId   = null;
+let sidebarOpen = false;
+let activeItem  = null;
+
+const USER_NAME = "{{ user_name }}";
+const LANG = localStorage.getItem('lang') || 'ar';
+
+const CT = {
+  ar: {
+    navLogo: "✦ المساعد الذكي",
+    greeting: `أهلاً، ${USER_NAME} 👋`,
+    logout: "خروج",
+    sidebarTitle: "💬 المحادثات السابقة",
+    newChatTitle: "محادثة جديدة",
+    loading: "جارٍ التحميل...",
+    noChats: "لا توجد محادثات سابقة في آخر 7 أيام",
+    welcome: `أهلاً <strong>${USER_NAME}</strong>! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟ 😊`,
+    newChatWelcome: "أهلاً! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟ 😊",
+    placeholder: "اكتب رسالتك هنا...",
+    hint: "اضغط Enter للإرسال • Shift+Enter لسطر جديد",
+    connError: "حدث خطأ في الاتصال.",
+  },
+  en: {
+    navLogo: "✦ Chatbot",
+    greeting: `Hello, ${USER_NAME} 👋`,
+    logout: "Logout",
+    sidebarTitle: "💬 Previous Chats",
+    newChatTitle: "New Chat",
+    loading: "Loading...",
+    noChats: "No conversations in the last 7 days",
+    welcome: `Hello <strong>${USER_NAME}</strong>! I'm your AI Chatbot. How can I help you today? 😊`,
+    newChatWelcome: "Hello! I'm your AI Chatbot. How can I help you today? 😊",
+    placeholder: "Type your message here...",
+    hint: "Press Enter to send • Shift+Enter for new line",
+    connError: "A connection error occurred.",
+  }
+};
+
+function applyLang() {
+  const T = CT[LANG];
+  const isAr = LANG === 'ar';
+  document.documentElement.setAttribute('lang', LANG);
+  document.documentElement.setAttribute('dir', isAr ? 'rtl' : 'ltr');
+  document.getElementById('navLogo').textContent    = T.navLogo;
+  document.getElementById('navGreeting').textContent = T.greeting;
+  document.getElementById('btnLogout').textContent   = T.logout;
+  document.getElementById('sidebarTitle').textContent = T.sidebarTitle;
+  document.getElementById('btnNewChat').title        = T.newChatTitle;
+  document.getElementById('welcomeMsg').innerHTML    = T.welcome;
+  document.getElementById('userInput').placeholder   = T.placeholder;
+  document.getElementById('chatHint').textContent    = T.hint;
+}
+
+applyLang();
+
+// ── Toggle sidebar ──
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.getElementById('chatSidebar').classList.toggle('open', sidebarOpen);
+  document.getElementById('sidebarOverlay').classList.toggle('show', sidebarOpen);
+  if (sidebarOpen) loadSessions();
+}
+
+// ── Load sessions ──
+async function loadSessions() {
+  try {
+    const res  = await fetch('/get_sessions');
+    const data = await res.json();
+    const list = document.getElementById('sessionList');
+
+    if (!data.length) {
+      list.innerHTML = `<p class="sidebar-empty">${CT[LANG].noChats}</p>`;
+      return;
+    }
+
+    list.innerHTML = '';
+    data.forEach(s => {
+      const item = document.createElement('div');
+      item.className   = 'session-item';
+      item.dataset.sid = s.id;
+      item.onclick     = () => loadSession(s.id, item);
+      item.innerHTML   = `
+        <div class="session-title">${escapeHtml(s.title)}</div>
+        <div class="session-date">${s.date}</div>`;
+      // Mark active if current session
+      if (s.id === sessionId) {
+        item.classList.add('active');
+        activeItem = item;
+      }
+      list.appendChild(item);
+    });
+  } catch(e) {}
+}
+
+// ── Load a session ──
+async function loadSession(id, itemEl) {
+  try {
+    const res  = await fetch(`/get_session_messages/${id}`);
+    const msgs = await res.json();
+
+    // Mark active
+    if (activeItem) activeItem.classList.remove('active');
+    itemEl.classList.add('active');
+    activeItem = itemEl;
+
+    // Set session
+    sessionId   = id;
+    chatHistory = [];
+
+    // Clear & render messages
+    const box = document.getElementById('chatMessages');
+    box.innerHTML = '';
+
+    msgs.forEach(m => {
+      const role = m.role === 'user' ? 'user' : 'bot';
+      appendMessage(role, m.message, false);
+      chatHistory.push({
+        role:    m.role === 'user' ? 'user' : 'assistant',
+        content: m.message
+      });
+    });
+
+    // Close sidebar
+    toggleSidebar();
+  } catch(e) {}
+}
+
+// ── Start new chat ──
+function startNewChat() {
+  sessionId   = null;
+  chatHistory = [];
+  if (activeItem) { activeItem.classList.remove('active'); activeItem = null; }
+
+  const box = document.getElementById('chatMessages');
+  box.innerHTML = `
+    <div class="msg bot-msg">
+      <div class="msg-avatar">✦</div>
+      <div class="msg-bubble">${CT[LANG].newChatWelcome}</div>
+    </div>`;
+
+  toggleSidebar();
+  document.getElementById('userInput').focus();
+}
+
+// ── Send message ──
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const msg   = input.value.trim();
+  if (!msg) return;
+
+  appendMessage('user', msg);
+  chatHistory.push({role:'user', content: msg});
+  input.value = '';
+  input.style.height = 'auto';
+
+  const sendBtn  = document.getElementById('sendBtn');
+  sendBtn.disabled = true;
+  const typingEl  = appendTyping();
+
+  try {
+    const res  = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        message:    msg,
+        history:    chatHistory.slice(-10),
+        session_id: sessionId
+      })
+    });
+    const data = await res.json();
+
+    typingEl.remove();
+    const reply = data.reply || data.error || (LANG === 'en' ? 'An error occurred' : 'حدث خطأ');
+    appendMessage('bot', reply);
+    chatHistory.push({role:'assistant', content: reply});
+
+    if (data.session_id && !sessionId) {
+      sessionId = data.session_id;
+    }
+  } catch(e) {
+    typingEl.remove();
+    appendMessage('bot', CT[LANG].connError);
+  }
+
+  sendBtn.disabled = false;
+}
+
+// ── Format text ──
+function formatText(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,     '<em>$1</em>')
+    .replace(/\n/g,            '<br>');
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function appendMessage(role, text, scroll=true) {
+  const box    = document.getElementById('chatMessages');
+  const div    = document.createElement('div');
+  div.className = `msg ${role === 'user' ? 'user-msg' : 'bot-msg'}`;
+
+  const avatar = document.createElement('div');
+  avatar.className   = 'msg-avatar';
+  avatar.textContent = role === 'user' ? '👤' : '✦';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatText(text);
+
+  if (role === 'user') {
+    div.appendChild(bubble);
+    div.appendChild(avatar);
+  } else {
+    div.appendChild(avatar);
+    div.appendChild(bubble);
+  }
+
+  box.appendChild(div);
+  if (scroll) box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function appendTyping() {
+  const box = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg bot-msg typing-indicator-wrap';
+  div.innerHTML = `
+    <div class="msg-avatar">✦</div>
+    <div class="msg-bubble typing-bubble">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+</script>
+</body>
+</html>

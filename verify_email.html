@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTabTitle">تأكيد البريد الإلكتروني</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="bg-shapes">
+  <div class="shape s1"></div>
+  <div class="shape s2"></div>
+  <div class="shape s3"></div>
+</div>
+
+<div class="card-wrapper">
+  <div class="card">
+    <div class="card-header">
+      <div class="logo-icon">📧</div>
+      <h1 id="pageTitle">تأكيد البريد الإلكتروني</h1>
+      <p class="subtitle" id="pageSub">أرسلنا رمز تأكيد إلى</p>
+      <p class="email-display">{{ email }}</p>
+    </div>
+
+    {% if resent %}
+    <div class="alert alert-success">
+      <span class="alert-icon">✓</span> <span id="resentMsg">تم إرسال رمز جديد!</span>
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-error">
+      <span class="alert-icon">⚠</span> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/verify-email">
+      <input type="hidden" name="lang" id="langInput" value="ar">
+        <label id="codeLabel">أدخل الرمز المكون من 6 أرقام</label>
+        <input type="text" name="code" id="otpInput"
+               placeholder="0 0 0 0 0 0"
+               maxlength="6"
+               autocomplete="one-time-code"
+               style="text-align:center;font-size:1.6rem;letter-spacing:12px;font-weight:700"
+               required autofocus>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        تأكيد الحساب ✓
+      </button>
+    </form>
+
+    <p class="switch-page">
+      <span id="noCodeText">لم يصلك الرمز؟</span>
+      <a href="/resend-otp" id="resendLink">إعادة الإرسال</a>
+    </p>
+    <p class="switch-page" style="margin-top:.3rem">
+      <a href="/register" id="changeEmailLink">← تغيير البريد الإلكتروني</a>
+    </p>
+  </div>
+</div>
+
+<script>
+document.getElementById('otpInput').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '');
+});
+
+const T = {
+  ar: {
+    tab: "تأكيد البريد الإلكتروني",
+    pageTitle: "تأكيد البريد الإلكتروني",
+    pageSub: "أرسلنا رمز تأكيد إلى",
+    resentMsg: "تم إرسال رمز جديد!",
+    codeLabel: "أدخل الرمز المكون من 6 أرقام",
+    submitBtn: "تأكيد الحساب ✓",
+    noCodeText: "لم يصلك الرمز؟",
+    resendLink: "إعادة الإرسال",
+    changeEmailLink: "← تغيير البريد الإلكتروني",
+  },
+  en: {
+    tab: "Email Verification",
+    pageTitle: "Email Verification",
+    pageSub: "We sent a verification code to",
+    resentMsg: "A new code has been sent!",
+    codeLabel: "Enter the 6-digit code",
+    submitBtn: "Verify Account ✓",
+    noCodeText: "Didn't receive the code?",
+    resendLink: "Resend",
+    changeEmailLink: "← Change Email",
+  }
+};
+
+function applyLang(l) {
+  const t = T[l];
+  const root = document.getElementById('htmlRoot');
+  root.setAttribute('lang', l);
+  root.setAttribute('dir', l === 'ar' ? 'rtl' : 'ltr');
+  document.getElementById('pageTabTitle').textContent  = t.tab;
+  document.getElementById('pageTitle').textContent     = t.pageTitle;
+  document.getElementById('pageSub').textContent       = t.pageSub;
+  document.getElementById('codeLabel').textContent     = t.codeLabel;
+  document.getElementById('submitBtn').textContent     = t.submitBtn;
+  document.getElementById('noCodeText').textContent    = t.noCodeText;
+  document.getElementById('resendLink').textContent    = t.resendLink;
+  document.getElementById('changeEmailLink').textContent = t.changeEmailLink;
+  const resentEl = document.getElementById('resentMsg');
+  if (resentEl) resentEl.textContent = t.resentMsg;
+  const li = document.getElementById('langInput');
+  if (li) li.value = l;
+}
+
+const lang = localStorage.getItem('lang') || 'ar';
+// sync cookie so Flask knows the language
+document.cookie = 'lang=' + lang + ';path=/;max-age=31536000';
+applyLang(lang);
+</script>
+</body>
+</html>

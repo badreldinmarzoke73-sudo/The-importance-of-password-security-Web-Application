@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.lang-btn {
+  position: fixed; top: 20px; right: 20px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px; color: #fff;
+  font-family: 'Cairo', sans-serif;
+  font-size: .85rem; font-weight: 700;
+  padding: .4rem .9rem; cursor: pointer;
+  z-index: 100; transition: background .2s;
+}
+.lang-btn:hover { background: rgba(255,255,255,.15); }
+
+.info-btn {
+  position: fixed; top: 20px; left: 20px;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: linear-gradient(135deg, #6c63ff, #00c9b1);
+  border: none; color: #fff; font-size: 1.2rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 15px rgba(108,99,255,.4);
+  transition: transform .2s; z-index: 100;
+}
+.info-btn:hover { transform: scale(1.1); }
+
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(6px);
+  z-index: 500; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #13132a; border: 1px solid rgba(108,99,255,.3);
+  border-radius: 24px; padding: 2rem;
+  max-width: 560px; width: 100%; max-height: 85vh;
+  overflow-y: auto; animation: popIn .3s ease; position: relative;
+}
+@keyframes popIn {
+  from { opacity:0; transform: scale(.9) translateY(20px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+.modal-box::-webkit-scrollbar { width: 4px; }
+.modal-box::-webkit-scrollbar-thumb { background: rgba(108,99,255,.3); border-radius: 99px; }
+.modal-close {
+  position: absolute; top: 1rem; left: 1rem;
+  background: rgba(255,255,255,.08); border: none; border-radius: 8px;
+  color: rgba(255,255,255,.6); width: 32px; height: 32px;
+  cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: rgba(255,255,255,.15); }
+.modal-title { text-align: center; font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: .4rem; }
+.modal-subtitle { text-align: center; font-size: .88rem; color: rgba(255,255,255,.45); margin-bottom: 1.5rem; }
+.info-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 1rem 1.2rem; margin-bottom: 1rem; }
+.info-card-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
+.info-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.info-card-title { font-size: .95rem; font-weight: 700; color: #fff; }
+.info-card p { font-size: .85rem; color: rgba(255,255,255,.55); line-height: 1.7; margin: 0; }
+.tip-list { list-style: none; padding: 0; margin: .5rem 0 0; }
+.tip-list li { font-size: .83rem; color: rgba(255,255,255,.55); padding: .25rem 0; display: flex; align-items: flex-start; gap: .5rem; }
+.tip-list li::before { content: "✓"; color: #00c9b1; font-weight: 700; flex-shrink: 0; }
+.divider { text-align: center; font-size: .78rem; color: rgba(255,255,255,.25); margin: 1rem 0; display: flex; align-items: center; gap: .5rem; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,.08); }
+</style>
+</head>
+<body>
+<div class="bg-shapes">
+  <div class="shape s1"></div><div class="shape s2"></div><div class="shape s3"></div>
+</div>
+
+<button class="lang-btn" id="langBtn" onclick="toggleLang()">🌐 EN</button>
+<button class="info-btn" onclick="openModal()">ℹ</button>
+
+<!-- Modal -->
+<div class="modal-overlay" id="secModal" onclick="closeModalOutside(event)">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" data-key="modalTitle">🔐 دليل الأمان الرقمي</div>
+    <div class="modal-subtitle" data-key="modalSub">لماذا يهمك أمانك على الإنترنت؟</div>
+    <div class="info-card">
+      <div class="info-card-header">
+        <div class="info-card-icon" style="background:rgba(108,99,255,.2)">🔑</div>
+        <div class="info-card-title" data-key="c1title">أهمية كلمة السر القوية</div>
+      </div>
+      <p data-key="c1desc">كلمة السر الضعيفة هي أول باب يدخل منه المخترق. الهجمات الآلية تستطيع تخمين ملايين الكلمات في الثانية الواحدة!</p>
+      <ul class="tip-list">
+        <li data-key="c1t1">استخدم 12 حرفاً على الأقل</li>
+        <li data-key="c1t2">اخلط بين أحرف كبيرة وصغيرة وأرقام ورموز</li>
+        <li data-key="c1t3">لا تستخدم اسمك أو تاريخ ميلادك</li>
+        <li data-key="c1t4">لا تكرر نفس الباسورد في أكثر من موقع</li>
+        <li data-key="c1t5">غيّر كلمة السر كل 3 أشهر</li>
+      </ul>
+    </div>
+    <div class="divider" data-key="divider1">الأمن السيبراني</div>
+    <div class="info-card">
+      <div class="info-card-header">
+        <div class="info-card-icon" style="background:rgba(0,201,177,.15)">🛡️</div>
+        <div class="info-card-title" data-key="c2title">ما هو الأمن السيبراني؟</div>
+      </div>
+      <p data-key="c2desc">الأمن السيبراني هو مجموعة من الممارسات والتقنيات التي تحمي الأنظمة والشبكات والبيانات من الهجمات الرقمية والوصول غير المصرح به.</p>
+    </div>
+    <div class="info-card">
+      <div class="info-card-header">
+        <div class="info-card-icon" style="background:rgba(255,107,157,.15)">⚠️</div>
+        <div class="info-card-title" data-key="c3title">أشهر أنواع الهجمات</div>
+      </div>
+      <ul class="tip-list">
+        <li data-key="c3t1"><strong style="color:#fff">Phishing</strong> — رسائل مزيفة تخدعك لتسريب بياناتك</li>
+        <li data-key="c3t2"><strong style="color:#fff">Brute Force</strong> — تخمين الباسورد بملايين المحاولات</li>
+        <li data-key="c3t3"><strong style="color:#fff">Malware</strong> — برامج خبيثة تسرق بياناتك</li>
+        <li data-key="c3t4"><strong style="color:#fff">Man in the Middle</strong> — اعتراض الاتصالات بينك وبين المواقع</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-header">
+        <div class="info-card-icon" style="background:rgba(241,196,15,.15)">💡</div>
+        <div class="info-card-title" data-key="c4title">نصائح لحماية نفسك</div>
+      </div>
+      <ul class="tip-list">
+        <li data-key="c4t1">فعّل التحقق بخطوتين (2FA) دائماً</li>
+        <li data-key="c4t2">لا تفتح روابط مجهولة المصدر</li>
+        <li data-key="c4t3">تأكد من HTTPS في عنوان المواقع</li>
+        <li data-key="c4t4">لا تتصل بـ WiFi عام بدون VPN</li>
+        <li data-key="c4t5">حدّث برامجك ونظامك باستمرار</li>
+        <li data-key="c4t6">استخدم برنامج مكافح الفيروسات</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <div class="info-card-header">
+        <div class="info-card-icon" style="background:rgba(46,204,113,.15)">🔒</div>
+        <div class="info-card-title" data-key="c5title">كيف نحمي بياناتك في هذا التطبيق؟</div>
+      </div>
+      <ul class="tip-list">
+        <li data-key="c5t1">كلمة السر مشفرة بخوارزمية MD5</li>
+        <li data-key="c5t2">المحادثات مشفرة بخوارزمية AES</li>
+        <li data-key="c5t3">التحقق من الإيميل برمز OTP مؤقت</li>
+        <li data-key="c5t4">الجلسات محمية بـ Session Key سري</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Main Card -->
+<div class="card-wrapper">
+  <div class="card">
+    <div class="card-header">
+      <div class="logo-icon">✦</div>
+      <h1 data-key="pageTitle">مرحباً بعودتك</h1>
+      <p class="subtitle" data-key="pageSub">سجّل دخولك للمتابعة</p>
+    </div>
+
+    {% if registered %}
+    <div class="alert alert-success" data-key="registeredMsg"><span class="alert-icon">✓</span> تم إنشاء حسابك وتأكيده بنجاح!</div>
+    {% endif %}
+    {% if reset_done %}
+    <div class="alert alert-success" data-key="resetDoneMsg"><span class="alert-icon">✓</span> تم تغيير كلمة السر بنجاح!</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert alert-error"><span class="alert-icon">⚠</span> {{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/login">
+      <input type="hidden" name="lang" id="langInput" value="ar">
+      <div class="form-group">
+        <label data-key="emailLabel">البريد الإلكتروني</label>
+        <input type="email" name="email" placeholder="example@email.com" required>
+      </div>
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+          <label style="margin:0" data-key="passLabel">كلمة السر</label>
+          <a href="/forgot-password" style="font-size:.82rem;color:#a29dff;text-decoration:none" data-key="forgotLink">نسيت كلمة السر؟</a>
+        </div>
+        <div class="input-action-wrap">
+          <input type="password" name="password" id="password" placeholder="••••••••" required>
+          <button type="button" class="btn-eye" onclick="togglePass('password',this)">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <span data-key="submitBtn">تسجيل الدخول</span>
+      </button>
+    </form>
+
+    <p class="switch-page">
+      <span data-key="noAccount">ليس لديك حساب؟</span>
+      <a href="/register" data-key="registerLink">إنشاء حساب جديد</a>
+    </p>
+  </div>
+</div>
+
+<script>
+const T = {
+  ar: {
+    pageTitle:"مرحباً بعودتك", pageSub:"سجّل دخولك للمتابعة",
+    emailLabel:"البريد الإلكتروني", passLabel:"كلمة السر",
+    forgotLink:"نسيت كلمة السر؟", submitBtn:"تسجيل الدخول",
+    noAccount:"ليس لديك حساب؟", registerLink:"إنشاء حساب جديد",
+    modalTitle:"🔐 دليل الأمان الرقمي", modalSub:"لماذا يهمك أمانك على الإنترنت؟",
+    c1title:"أهمية كلمة السر القوية",
+    c1desc:"كلمة السر الضعيفة هي أول باب يدخل منه المخترق. الهجمات الآلية تستطيع تخمين ملايين الكلمات في الثانية الواحدة!",
+    c1t1:"استخدم 12 حرفاً على الأقل", c1t2:"اخلط بين أحرف كبيرة وصغيرة وأرقام ورموز",
+    c1t3:"لا تستخدم اسمك أو تاريخ ميلادك", c1t4:"لا تكرر نفس الباسورد في أكثر من موقع",
+    c1t5:"غيّر كلمة السر كل 3 أشهر", divider1:"الأمن السيبراني",
+    c2title:"ما هو الأمن السيبراني؟",
+    c2desc:"الأمن السيبراني هو مجموعة من الممارسات والتقنيات التي تحمي الأنظمة والشبكات والبيانات من الهجمات الرقمية والوصول غير المصرح به.",
+    c3title:"أشهر أنواع الهجمات",
+    c3t1:"<strong style='color:#fff'>Phishing</strong> — رسائل مزيفة تخدعك لتسريب بياناتك",
+    c3t2:"<strong style='color:#fff'>Brute Force</strong> — تخمين الباسورد بملايين المحاولات",
+    c3t3:"<strong style='color:#fff'>Malware</strong> — برامج خبيثة تسرق بياناتك",
+    c3t4:"<strong style='color:#fff'>Man in the Middle</strong> — اعتراض الاتصالات بينك وبين المواقع",
+    c4title:"نصائح لحماية نفسك",
+    c4t1:"فعّل التحقق بخطوتين (2FA) دائماً", c4t2:"لا تفتح روابط مجهولة المصدر",
+    c4t3:"تأكد من HTTPS في عنوان المواقع", c4t4:"لا تتصل بـ WiFi عام بدون VPN",
+    c4t5:"حدّث برامجك ونظامك باستمرار", c4t6:"استخدم برنامج مكافح الفيروسات",
+    c5title:"كيف نحمي بياناتك في هذا التطبيق؟",
+    c5t1:"كلمة السر مشفرة بخوارزمية MD5", c5t2:"المحادثات مشفرة بخوارزمية AES",
+    c5t3:"التحقق من الإيميل برمز OTP مؤقت", c5t4:"الجلسات محمية بـ Session Key سري",
+    registeredMsg:"✓ تم إنشاء حسابك وتأكيده بنجاح!",
+    resetDoneMsg:"✓ تم تغيير كلمة السر بنجاح!",
+  },
+  en: {
+    pageTitle:"Welcome Back", pageSub:"Sign in to continue",
+    emailLabel:"Email Address", passLabel:"Password",
+    forgotLink:"Forgot Password?", submitBtn:"Sign In",
+    noAccount:"Don't have an account?", registerLink:"Create New Account",
+    modalTitle:"🔐 Digital Security Guide", modalSub:"Why does your online security matter?",
+    registeredMsg:"✓ Your account has been created and verified successfully!",
+    resetDoneMsg:"✓ Your password has been changed successfully!",
+    c1title:"Importance of a Strong Password",
+    c1desc:"A weak password is the first door a hacker enters. Automated attacks can guess millions of words per second!",
+    c1t1:"Use at least 12 characters", c1t2:"Mix uppercase, lowercase, numbers and symbols",
+    c1t3:"Don't use your name or date of birth", c1t4:"Don't reuse the same password on multiple sites",
+    c1t5:"Change your password every 3 months", divider1:"Cybersecurity",
+    c2title:"What is Cybersecurity?",
+    c2desc:"Cybersecurity is a set of practices and technologies that protect systems, networks and data from digital attacks and unauthorized access.",
+    c3title:"Most Common Attack Types",
+    c3t1:"<strong style='color:#fff'>Phishing</strong> — Fake messages that trick you into revealing your data",
+    c3t2:"<strong style='color:#fff'>Brute Force</strong> — Guessing passwords with millions of attempts",
+    c3t3:"<strong style='color:#fff'>Malware</strong> — Malicious software that steals your data",
+    c3t4:"<strong style='color:#fff'>Man in the Middle</strong> — Intercepting communications between you and websites",
+    c4title:"Tips to Protect Yourself",
+    c4t1:"Always enable Two-Factor Authentication (2FA)", c4t2:"Don't open links from unknown sources",
+    c4t3:"Make sure websites use HTTPS", c4t4:"Don't connect to public WiFi without a VPN",
+    c4t5:"Keep your software and system updated", c4t6:"Use antivirus software",
+    c5title:"How We Protect Your Data in This App?",
+    c5t1:"Password encrypted with MD5 algorithm", c5t2:"Conversations encrypted with AES algorithm",
+    c5t3:"Email verification with temporary OTP code", c5t4:"Sessions protected with a secret Session Key",
+  }
+};
+
+let lang = localStorage.getItem('lang') || 'ar';
+
+function applyLang(l) {
+  const t = T[l];
+  document.getElementById('htmlRoot').setAttribute('lang', l);
+  document.getElementById('htmlRoot').setAttribute('dir', l==='ar'?'rtl':'ltr');
+  document.querySelectorAll('[data-key]').forEach(el => {
+    if (t[el.dataset.key] !== undefined) el.innerHTML = t[el.dataset.key];
+  });
+  document.getElementById('langBtn').textContent = l==='ar' ? '🌐 EN' : '🌐 AR';
+  lang = l;
+  localStorage.setItem('lang', l);
+  document.cookie = 'lang=' + l + ';path=/;max-age=31536000';
+  const li = document.getElementById('langInput');
+  if (li) li.value = l;
+}
+
+function toggleLang() { applyLang(lang==='ar'?'en':'ar'); }
+function openModal() { document.getElementById('secModal').classList.add('show'); document.body.style.overflow='hidden'; }
+function closeModal() { document.getElementById('secModal').classList.remove('show'); document.body.style.overflow=''; }
+function closeModalOutside(e) { if(e.target===document.getElementById('secModal')) closeModal(); }
+function togglePass(id,btn) {
+  const inp=document.getElementById(id);
+  inp.type=inp.type==='password'?'text':'password';
+  btn.textContent=inp.type==='password'?'👁':'🙈';
+}
+
+applyLang(lang);
+</script>
+</body>
+</html>
